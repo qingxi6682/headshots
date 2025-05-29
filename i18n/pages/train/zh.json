@@ -1,0 +1,9 @@
+{
+  "train": {
+    "name": "train",
+    "title": "训练模型",
+    "description": "上传照片，开始训练您的专属模型",
+    "card_title": "训练模型",
+    "card_description": "选择名称、类型并上传照片开始训练。"
+  }
+}

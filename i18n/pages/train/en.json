@@ -1,0 +1,9 @@
+{
+  "train": {
+    "name": "train",
+    "title": "Train Model",
+    "description": "Upload photos and start training your custom model",
+    "card_title": "Train Model",
+    "card_description": "Choose a name, type and upload photos to start training."
+  }
+}
