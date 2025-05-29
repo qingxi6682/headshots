@@ -24,6 +24,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
 
+  console.log('session:', session);
+
   const payload = await request.json();
   const images = payload.urls;
   const type = payload.type;
@@ -64,17 +66,20 @@ export async function POST(request: Request) {
     .select('*')
     .eq('email', session.user.email)
     .single();
+  console.log('userData:', userData, 'userError:', userError);
 
   if (userError || !userData) {
     return NextResponse.json({ error: '用户信息获取失败' }, { status: 403 });
   }
 
+  /*
   // 检查用户积分
   const { data: creditData, error: creditError } = await supabase
     .from('credits')
     .select('credits')
     .eq('user_id', userData.id)
     .single();
+  console.log('creditData:', creditData, 'creditError:', creditError);
 
   if (creditError || !creditData) {
     return NextResponse.json({ error: '积分信息获取失败' }, { status: 403 });
@@ -103,13 +108,14 @@ export async function POST(request: Request) {
   if (insertError) {
     return NextResponse.json({ error: '模型记录插入失败' }, { status: 500 });
   }
+  */
 
   // 创建模型训练请求
   try {
     const blobUrls = payload.urls;
     console.log('开始调用 Astria API，请求参数:', {
       tune: {
-        callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=${modelRow.id}&webhook_secret=${appWebhookSecret}`,
+        callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=demo&webhook_secret=${appWebhookSecret}`,
         title: `${name} - ${userData.id}`,
         name: type,
         branch: 'fast',
@@ -125,7 +131,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         tune: {
-          callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=${modelRow.id}&webhook_secret=${appWebhookSecret}`,
+          callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=demo&webhook_secret=${appWebhookSecret}`,
           title: `${name} - ${userData.id}`,
           name: type,
           branch: 'fast',
@@ -155,6 +161,7 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
     // 保存 tune_id 到数据库
     const { error: modelError } = await supabase
       .from('models')
@@ -181,6 +188,7 @@ export async function POST(request: Request) {
     if (updateError) {
       return NextResponse.json({ error: '积分扣除失败' }, { status: 500 });
     }
+    */
 
     return NextResponse.json({
       message: 'Model training started',

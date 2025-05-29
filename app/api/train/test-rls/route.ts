@@ -2,7 +2,7 @@
  * @version: 1.0.0
  * @Author: Eblis
  * @Date: 2025-05-28 22:36:57
- * @LastEditTime: 2025-05-29 11:25:45
+ * @LastEditTime: 2025-05-29 18:22:19
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
