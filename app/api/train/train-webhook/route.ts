@@ -1,174 +1,76 @@
-import { Database } from '@/types/train/supabase';
-import { createClient } from '@supabase/supabase-js';
+/*
+ * @version: 1.0.0
+ * @Author: Eblis
+ * @Date: 2025-05-29 11:55:22
+ * @LastEditTime: 2025-05-29 17:55:03
+ */
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
-
-export const dynamic = 'force-dynamic';
-
-const resendApiKey = process.env.RESEND_API_KEY;
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { createClient } from '@supabase/supabase-js';
 
 const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
-
-if (!resendApiKey) {
-  console.warn(
-    'We detected that the RESEND_API_KEY is missing from your environment variables. The app should still work but email notifications will not be sent. Please add your RESEND_API_KEY to your environment variables if you want to enable email notifications.'
-  );
-}
-
-if (!supabaseUrl) {
-  throw new Error('MISSING NEXT_PUBLIC_SUPABASE_URL!');
-}
-
-if (!supabaseServiceRoleKey) {
-  throw new Error('MISSING SUPABASE_SERVICE_ROLE_KEY!');
-}
 
 if (!appWebhookSecret) {
   throw new Error('MISSING APP_WEBHOOK_SECRET!');
 }
 
 export async function POST(request: Request) {
-  type TuneData = {
-    id: number;
-    title: string;
-    name: string;
-    steps: null;
-    trained_at: null;
-    started_training_at: null;
-    created_at: string;
-    updated_at: string;
-    expires_at: null;
-  };
-
-  const incomingData = (await request.json()) as { tune: TuneData };
-
-  const { tune } = incomingData;
-
-  const urlObj = new URL(request.url);
-  const user_id = urlObj.searchParams.get('user_id');
-  const model_id = urlObj.searchParams.get('model_id');
-  const webhook_secret = urlObj.searchParams.get('webhook_secret');
-
-  if (!model_id) {
-    return NextResponse.json(
-      {
-        message: 'Malformed URL, no model_id detected!',
-      },
-      { status: 500 }
-    );
-  }
-
-  if (!webhook_secret) {
-    return NextResponse.json(
-      {
-        message: 'Malformed URL, no webhook_secret detected!',
-      },
-      { status: 500 }
-    );
-  }
-
-  if (webhook_secret.toLowerCase() !== appWebhookSecret?.toLowerCase()) {
-    return NextResponse.json(
-      {
-        message: 'Unauthorized!',
-      },
-      { status: 401 }
-    );
-  }
-
-  if (!user_id) {
-    return NextResponse.json(
-      {
-        message: 'Malformed URL, no user_id detected!',
-      },
-      { status: 500 }
-    );
-  }
-
-  const supabase = createClient<Database>(
-    supabaseUrl as string,
-    supabaseServiceRoleKey as string,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.admin.getUserById(user_id);
-
-  if (error) {
-    return NextResponse.json(
-      {
-        message: error.message,
-      },
-      { status: 401 }
-    );
-  }
-
-  if (!user) {
-    return NextResponse.json(
-      {
-        message: 'Unauthorized',
-      },
-      { status: 401 }
-    );
-  }
-
   try {
-    if (resendApiKey) {
-      const resend = new Resend(resendApiKey);
-      await resend.emails.send({
-        from: 'noreply@headshots.tryleap.ai',
-        to: user?.email ?? '',
-        subject: 'Your model was successfully trained!',
-        html: `<h2>We're writing to notify you that your model training was successful! 1 credit has been used from your account.</h2>`,
-      });
+    const json = await request.json();
+    const { status, tune } = json;
+
+    // 从 URL 参数中获取信息
+    const url = new URL(request.url);
+    const user_id = url.searchParams.get('user_id');
+    const model_id = url.searchParams.get('model_id');
+    const webhook_secret = url.searchParams.get('webhook_secret');
+
+    // 验证 webhook secret
+    if (webhook_secret !== appWebhookSecret) {
+      return NextResponse.json(
+        { message: 'Invalid webhook secret' },
+        { status: 401 }
+      );
     }
 
-    const { data: modelUpdated, error: modelUpdatedError } = await supabase
+    if (!user_id || !model_id) {
+      return NextResponse.json(
+        { message: 'Missing user_id or model_id' },
+        { status: 400 }
+      );
+    }
+
+    // 创建 Supabase 客户端
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // 更新模型状态
+    const { error: updateError } = await supabase
       .from('models')
       .update({
-        modelId: `${tune.id}`,
-        status: 'finished',
+        status: status,
+        tune_id: tune?.id,
+        tune_status: tune?.status,
+        tune_error: tune?.error,
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', Number(model_id))
-      .select();
+      .eq('user_id', user_id)
+      .eq('id', model_id);
 
-    if (modelUpdatedError) {
-      console.error({ modelUpdatedError });
+    if (updateError) {
+      console.error('更新模型状态失败:', updateError);
       return NextResponse.json(
-        {
-          message: 'Something went wrong!',
-        },
+        { message: 'Failed to update model status' },
         { status: 500 }
       );
     }
 
-    if (!modelUpdated) {
-      console.error('No model updated!');
-      console.error({ modelUpdated });
-    }
-
+    return NextResponse.json({ message: 'Model status updated' });
+  } catch (error) {
+    console.error('处理 webhook 失败:', error);
     return NextResponse.json(
-      {
-        message: 'success',
-      },
-      { status: 200, statusText: 'Success' }
-    );
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json(
-      {
-        message: 'Something went wrong!',
-      },
+      { message: 'Failed to process webhook' },
       { status: 500 }
     );
   }

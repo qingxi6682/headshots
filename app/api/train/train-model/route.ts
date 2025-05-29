@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     .eq('email', session.user.email)
     .single();
 
-  if (userError) {
+  if (userError || !userData) {
     return NextResponse.json({ error: '用户信息获取失败' }, { status: 403 });
   }
 
@@ -73,10 +73,10 @@ export async function POST(request: Request) {
   const { data: creditData, error: creditError } = await supabase
     .from('credits')
     .select('credits')
-    .eq('user_uuid', userData.uuid)
+    .eq('user_id', userData.id)
     .single();
 
-  if (creditError) {
+  if (creditError || !creditData) {
     return NextResponse.json({ error: '积分信息获取失败' }, { status: 403 });
   }
 
@@ -87,30 +87,50 @@ export async function POST(request: Request) {
     );
   }
 
-  // 创建模型训练请求
-  try {
-    console.log('开始调用 Astria API，请求参数:', {
+  // 训练前插入模型记录
+  const { data: modelRow, error: insertError } = await supabase
+    .from('models')
+    .insert({
       name,
       type,
-      pack,
-      imagesCount: images.length,
-      characteristics,
-      webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.uuid}&model_id=${name}&webhook_secret=${appWebhookSecret}`,
+      user_id: userData.id,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    return NextResponse.json({ error: '模型记录插入失败' }, { status: 500 });
+  }
+
+  // 创建模型训练请求
+  try {
+    const blobUrls = payload.urls;
+    console.log('开始调用 Astria API，请求参数:', {
+      tune: {
+        callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=${modelRow.id}&webhook_secret=${appWebhookSecret}`,
+        title: `${name} - ${userData.id}`,
+        name: type,
+        branch: 'fast',
+        image_urls: blobUrls,
+      },
     });
 
-    const response = await fetch('https://api.astria.ai/fine-tunes', {
+    const response = await fetch('https://api.astria.ai/tunes', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${astriaApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        name,
-        type,
-        pack,
-        images,
-        characteristics,
-        webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.uuid}&model_id=${name}&webhook_secret=${appWebhookSecret}`,
+        tune: {
+          callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=${modelRow.id}&webhook_secret=${appWebhookSecret}`,
+          title: `${name} - ${userData.id}`,
+          name: type,
+          branch: 'fast',
+          image_urls: blobUrls,
+        },
       }),
     });
 
@@ -135,19 +155,37 @@ export async function POST(request: Request) {
       );
     }
 
+    // 保存 tune_id 到数据库
+    const { error: modelError } = await supabase
+      .from('models')
+      .update({
+        modelid: responseData.id,
+        status: 'training',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', modelRow.id)
+      .eq('user_id', userData.id);
+
+    if (modelError) {
+      return NextResponse.json({ error: '更新模型状态失败' }, { status: 500 });
+    }
+
     console.log('Astria API 调用成功，开始扣除积分');
 
     // 扣除积分
     const { error: updateError } = await supabase
       .from('credits')
       .update({ credits: creditData.credits - 1 })
-      .eq('user_uuid', userData.uuid);
+      .eq('user_id', userData.id);
 
     if (updateError) {
       return NextResponse.json({ error: '积分扣除失败' }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Model training started' });
+    return NextResponse.json({
+      message: 'Model training started',
+      tune_id: responseData.id,
+    });
   } catch (error) {
     console.error('Error creating fine-tuned model:', error);
     return NextResponse.json(

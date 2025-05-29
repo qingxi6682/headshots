@@ -4,17 +4,9 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const resendApiKey = process.env.RESEND_API_KEY;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
-
-if (!resendApiKey) {
-  console.warn(
-    'We detected that the RESEND_API_KEY is missing from your environment variables. The app should still work but email notifications will not be sent. Please add your RESEND_API_KEY to your environment variables if you want to enable email notifications.'
-  );
-}
 
 if (!supabaseUrl) {
   throw new Error('MISSING NEXT_PUBLIC_SUPABASE_URL!');
