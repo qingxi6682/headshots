@@ -24,6 +24,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/train/:path*',
     '/',
     '/(en|en-US|zh|zh-CN|zh-TW|zh-HK|zh-MO|ja|ko|ru|fr|de|ar|es|it)/:path*',
   ],
