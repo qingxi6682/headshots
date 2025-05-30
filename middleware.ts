@@ -7,17 +7,13 @@ import { auth } from '@/auth';
 const intlMiddleware = createMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
+  // 优先跳过所有 /api 路由，保证 API 不被中间件处理
+  if (request.nextUrl.pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+
   // 先处理国际化
   const response = await intlMiddleware(request);
-
-  // // 检查是否是 /train 路由
-  // if (request.nextUrl.pathname.startsWith('/train')) {
-  //   const session = await auth();
-  //   if (!session?.user) {
-  //     // 未登录时重定向到登录页面
-  //     return NextResponse.redirect(new URL('/auth/signin', request.url));
-  //   }
-  // }
 
   return response;
 }
@@ -27,5 +23,6 @@ export const config = {
     '/train/:path*',
     '/',
     '/(en|en-US|zh|zh-CN|zh-TW|zh-HK|zh-MO|ja|ko|ru|fr|de|ar|es|it)/:path*',
+    // '/((?!privacy-policy|terms-of-service|api/|_next|_vercel|.*\\..*).*)', // 可选，建议注释掉
   ],
 };

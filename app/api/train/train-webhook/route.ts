@@ -15,6 +15,8 @@ if (!appWebhookSecret) {
 
 export async function POST(request: Request) {
   try {
+    // 添加日志，输出服务端 APP_WEBHOOK_SECRET
+    console.log('服务端 APP_WEBHOOK_SECRET:', process.env.APP_WEBHOOK_SECRET);
     const json = await request.json();
     const { status, tune } = json;
 
