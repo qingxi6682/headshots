@@ -91,6 +91,7 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+  */
 
   // 训练前插入模型记录
   const { data: modelRow, error: insertError } = await supabase
@@ -108,14 +109,13 @@ export async function POST(request: Request) {
   if (insertError) {
     return NextResponse.json({ error: '模型记录插入失败' }, { status: 500 });
   }
-  */
 
   // 创建模型训练请求
   try {
     const blobUrls = payload.urls;
     console.log('开始调用 Astria API，请求参数:', {
       tune: {
-        callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=demo&webhook_secret=${appWebhookSecret}`,
+        callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=${modelRow.id}&webhook_secret=${appWebhookSecret}`,
         title: `${name} - ${userData.id}`,
         name: type,
         branch: 'fast',
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         tune: {
-          callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=demo&webhook_secret=${appWebhookSecret}`,
+          callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/train/train-webhook?user_id=${userData.id}&model_id=${modelRow.id}&webhook_secret=${appWebhookSecret}`,
           title: `${name} - ${userData.id}`,
           name: type,
           branch: 'fast',
@@ -161,39 +161,63 @@ export async function POST(request: Request) {
       );
     }
 
-    /*
-    // 保存 tune_id 到数据库
-    const { error: modelError } = await supabase
-      .from('models')
-      .update({
-        modelid: responseData.id,
-        status: 'training',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', modelRow.id)
-      .eq('user_id', userData.id);
+    // Astria API 调用成功，开始更新数据库
+    try {
+      // 保存 tune_id 及相关信息到数据库
+      const { error: modelError } = await supabase
+        .from('models')
+        .update({
+          modelid: responseData.id,
+          status: 'training',
+          name: responseData.title,
+          type: responseData.name,
+          token: responseData.token, // 新增 token
+          eta: responseData.eta, // 新增 eta
+          callback: responseData.callback,
+        })
+        .eq('id', modelRow.id)
+        .eq('user_id', userData.id);
 
-    if (modelError) {
-      return NextResponse.json({ error: '更新模型状态失败' }, { status: 500 });
+      if (modelError) {
+        console.error('更新模型状态失败:', modelError);
+        return NextResponse.json(
+          { error: '更新模型状态失败' },
+          { status: 500 }
+        );
+      }
+
+      // 批量插入 orig_images 到 images 表
+      if (
+        Array.isArray(responseData.orig_images) &&
+        responseData.orig_images.length > 0
+      ) {
+        const imagesToInsert = (responseData.orig_images as string[]).map(
+          (uri: string) => ({
+            modelid: modelRow.id,
+            uri,
+            created_at: new Date().toISOString(),
+          })
+        );
+        const { error: imagesError } = await supabase
+          .from('images')
+          .insert(imagesToInsert);
+        if (imagesError) {
+          console.error('图片信息写入失败:', imagesError);
+          return NextResponse.json(
+            { error: '图片信息写入失败' },
+            { status: 500 }
+          );
+        }
+      }
+
+      return NextResponse.json({
+        message: 'Model training started',
+        tune_id: responseData.id,
+      });
+    } catch (dbError) {
+      console.error('数据库操作失败:', dbError);
+      return NextResponse.json({ message: '数据库操作失败' }, { status: 500 });
     }
-
-    console.log('Astria API 调用成功，开始扣除积分');
-
-    // 扣除积分
-    const { error: updateError } = await supabase
-      .from('credits')
-      .update({ credits: creditData.credits - 1 })
-      .eq('user_id', userData.id);
-
-    if (updateError) {
-      return NextResponse.json({ error: '积分扣除失败' }, { status: 500 });
-    }
-    */
-
-    return NextResponse.json({
-      message: 'Model training started',
-      tune_id: responseData.id,
-    });
   } catch (error) {
     console.error('Error creating fine-tuned model:', error);
     return NextResponse.json(

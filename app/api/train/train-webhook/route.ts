@@ -2,7 +2,7 @@
  * @version: 1.0.0
  * @Author: Eblis
  * @Date: 2025-05-29 11:55:22
- * @LastEditTime: 2025-05-29 17:55:03
+ * @LastEditTime: 2025-05-30 14:03:51
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -53,7 +53,6 @@ export async function POST(request: Request) {
         tune_id: tune?.id,
         tune_status: tune?.status,
         tune_error: tune?.error,
-        updated_at: new Date().toISOString(),
       })
       .eq('user_id', user_id)
       .eq('id', model_id);

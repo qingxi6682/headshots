@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { Check, Loader } from "lucide-react";
-import { PricingItem, Pricing as PricingType } from "@/types/blocks/pricing";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useEffect, useState } from "react";
+import { Check, Loader } from 'lucide-react';
+import { PricingItem, Pricing as PricingType } from '@/types/blocks/pricing';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useEffect, useState } from 'react';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Icon from "@/components/icon";
-import { Label } from "@/components/ui/label";
-import { loadStripe } from "@stripe/stripe-js";
-import { toast } from "sonner";
-import { useAppContext } from "@/contexts/app";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import Icon from '@/components/icon';
+import { Label } from '@/components/ui/label';
+import { loadStripe } from '@stripe/stripe-js';
+import { toast } from 'sonner';
+import { useAppContext } from '@/contexts/app';
 
 export default function Pricing({ pricing }: { pricing: PricingType }) {
   if (pricing.disabled) {
@@ -37,17 +37,17 @@ export default function Pricing({ pricing }: { pricing: PricingType }) {
         credits: item.credits,
         interval: item.interval,
         amount: cn_pay ? item.cn_amount : item.amount,
-        currency: cn_pay ? "cny" : item.currency,
+        currency: cn_pay ? 'cny' : item.currency,
         valid_months: item.valid_months,
       };
 
       setIsLoading(true);
       setProductId(item.product_id);
 
-      const response = await fetch("/api/checkout", {
-        method: "POST",
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(params),
       });
@@ -70,7 +70,7 @@ export default function Pricing({ pricing }: { pricing: PricingType }) {
 
       const stripe = await loadStripe(public_key);
       if (!stripe) {
-        toast.error("checkout failed");
+        toast.error('checkout failed');
         return;
       }
 
@@ -82,9 +82,9 @@ export default function Pricing({ pricing }: { pricing: PricingType }) {
         toast.error(result.error.message);
       }
     } catch (e) {
-      console.log("checkout failed: ", e);
+      console.log('checkout failed: ', e);
 
-      toast.error("checkout failed");
+      toast.error('checkout failed');
     } finally {
       setIsLoading(false);
       setProductId(null);
@@ -116,7 +116,7 @@ export default function Pricing({ pricing }: { pricing: PricingType }) {
               <RadioGroup
                 value={group}
                 className={`h-full grid-cols-${pricing.groups.length}`}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   setGroup(value);
                 }}
               >
@@ -127,7 +127,7 @@ export default function Pricing({ pricing }: { pricing: PricingType }) {
                       className='h-full rounded-md transition-all has-[button[data-state="checked"]]:bg-white'
                     >
                       <RadioGroupItem
-                        value={item.name || ""}
+                        value={item.name || ''}
                         id={item.name}
                         className="peer sr-only"
                       />
@@ -153,9 +153,8 @@ export default function Pricing({ pricing }: { pricing: PricingType }) {
           )}
           <div
             className={`w-full mt-0 grid gap-6 md:grid-cols-${
-              pricing.items?.filter(
-                (item) => !item.group || item.group === group
-              )?.length
+              pricing.items?.filter(item => !item.group || item.group === group)
+                ?.length
             }`}
           >
             {pricing.items?.map((item, index) => {
@@ -168,8 +167,8 @@ export default function Pricing({ pricing }: { pricing: PricingType }) {
                   key={index}
                   className={`rounded-lg p-6 ${
                     item.is_featured
-                      ? "border-primary border-2 bg-card text-card-foreground"
-                      : "border-muted border"
+                      ? 'border-primary border-2 bg-card text-card-foreground'
+                      : 'border-muted border'
                   }`}
                 >
                   <div className="flex h-full flex-col justify-between gap-5">

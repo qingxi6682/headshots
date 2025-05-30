@@ -2,7 +2,7 @@
  * @version: 1.0.0
  * @Author: Eblis
  * @Date: 2025-05-27 11:02:22
- * @LastEditTime: 2025-05-29 13:19:41
+ * @LastEditTime: 2025-05-30 11:35:09
  */
 'use client';
 
@@ -33,6 +33,12 @@ export default function Train({ train }: { train: TrainType }) {
 
   const { user, setShowSignModal } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user === null) {
+      setShowSignModal(true);
+    }
+  }, [user, setShowSignModal]);
 
   return (
     <section id={train.name} className="py-16">

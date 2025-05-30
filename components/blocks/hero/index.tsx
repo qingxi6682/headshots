@@ -1,21 +1,34 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import HappyUsers from "./happy-users";
-import HeroBg from "./bg";
-import { Hero as HeroType } from "@/types/blocks/hero";
-import Icon from "@/components/icon";
-import { Link } from "@/i18n/routing";
+'use client';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import HappyUsers from './happy-users';
+import HeroBg from './bg';
+import { Hero as HeroType } from '@/types/blocks/hero';
+import Icon from '@/components/icon';
+import { Link } from '@/i18n/routing';
+import { useAppContext } from '@/contexts/app';
 
 export default function Hero({ hero }: { hero: HeroType }) {
   if (hero.disabled) {
     return null;
   }
 
+  const { user, setShowSignModal } = useAppContext();
+
   const highlightText = hero.highlight_text;
   let texts = null;
   if (highlightText) {
     texts = hero.title?.split(highlightText, 2);
   }
+
+  const handleAuthClick = (e: React.MouseEvent, url: string) => {
+    if (!user) {
+      e.preventDefault();
+      setShowSignModal(true);
+    }
+    // 否则正常跳转
+  };
 
   return (
     <>
@@ -60,22 +73,42 @@ export default function Hero({ hero }: { hero: HeroType }) {
 
             <p
               className="m mx-auto max-w-3xl text-muted-foreground lg:text-xl"
-              dangerouslySetInnerHTML={{ __html: hero.description || "" }}
+              dangerouslySetInnerHTML={{ __html: hero.description || '' }}
             />
             {hero.buttons && (
               <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
                 {hero.buttons.map((item, i) => {
+                  if (item.title === 'Generate your headshots now') {
+                    return (
+                      <Link
+                        key={i}
+                        href={item.url as any}
+                        target={item.target || ''}
+                        className="flex items-center"
+                        onClick={e => handleAuthClick(e, item.url as string)}
+                      >
+                        <Button
+                          className="w-full"
+                          size="lg"
+                          variant={item.variant || 'default'}
+                        >
+                          {item.icon && <Icon name={item.icon} className="" />}
+                          {item.title}
+                        </Button>
+                      </Link>
+                    );
+                  }
                   return (
                     <Link
                       key={i}
                       href={item.url as any}
-                      target={item.target || ""}
+                      target={item.target || ''}
                       className="flex items-center"
                     >
                       <Button
                         className="w-full"
                         size="lg"
-                        variant={item.variant || "default"}
+                        variant={item.variant || 'default'}
                       >
                         {item.icon && <Icon name={item.icon} className="" />}
                         {item.title}

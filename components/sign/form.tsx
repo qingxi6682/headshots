@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Card,
@@ -6,54 +6,54 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { SiGithub, SiGoogle } from "react-icons/si";
+} from '@/components/ui/card';
+import { SiGithub, SiGoogle } from 'react-icons/si';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { signIn } from "next-auth/react";
-import { useTranslations } from "next-intl";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import { signIn } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 
 export default function SignForm({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<'div'>) {
   const t = useTranslations();
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">
-            {t("sign_modal.sign_in_title")}
+            {t('sign_modal.sign_in_title')}
           </CardTitle>
           <CardDescription>
-            {t("sign_modal.sign_in_description")}
+            {t('sign_modal.sign_in_description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
             <div className="flex flex-col gap-4">
-              {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && (
+              {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === 'true' && (
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => signIn("google")}
+                  onClick={() => signIn('google')}
                 >
                   <SiGoogle className="w-4 h-4" />
-                  {t("sign_modal.google_sign_in")}
+                  {t('sign_modal.google_sign_in')}
                 </Button>
               )}
-              {process.env.NEXT_PUBLIC_AUTH_GITHUB_ENABLED === "true" && (
+              {process.env.NEXT_PUBLIC_AUTH_GITHUB_ENABLED === 'true' && (
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => signIn("github")}
+                  onClick={() => signIn('github')}
                 >
                   <SiGithub className="w-4 h-4" />
-                  {t("sign_modal.github_sign_in")}
+                  {t('sign_modal.github_sign_in')}
                 </Button>
               )}
             </div>
@@ -92,7 +92,7 @@ export default function SignForm({
                   </Button>
                 </div>
                 <div className="text-center text-sm">
-                  Don&apos;t have an account?{" "}
+                  Don&apos;t have an account?{' '}
                   <a href="#" className="underline underline-offset-4">
                     Sign up
                   </a>
@@ -103,11 +103,11 @@ export default function SignForm({
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary  ">
-        By clicking continue, you agree to our{" "}
+        By clicking continue, you agree to our{' '}
         <a href="/terms-of-service" target="_blank">
           Terms of Service
-        </a>{" "}
-        and{" "}
+        </a>{' '}
+        and{' '}
         <a href="/privacy-policy" target="_blank">
           Privacy Policy
         </a>
