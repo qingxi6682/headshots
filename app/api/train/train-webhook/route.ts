@@ -2,7 +2,7 @@
  * @version: 1.0.0
  * @Author: Eblis
  * @Date: 2025-05-29 11:55:22
- * @LastEditTime: 2025-05-30 14:03:51
+ * @LastEditTime: 2025-05-30 16:36:06
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -47,11 +47,23 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // 业务流转状态映射
+    let newStatus = '';
+    if (tune?.status === 'done') {
+      newStatus = 'finished';
+    } else if (tune?.status === 'error') {
+      newStatus = 'failed';
+    } else if (tune?.status === 'in_progress') {
+      newStatus = 'training';
+    } else {
+      newStatus = 'unknown';
+    }
+
     // 更新模型状态
     const { error: updateError } = await supabase
       .from('models')
       .update({
-        status: status,
+        status: newStatus,
         tune_id: tune?.id,
         tune_status: tune?.status,
         tune_error: tune?.error,
